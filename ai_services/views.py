@@ -82,19 +82,16 @@ class GenerateBusinessesView(APIView):
         if businesses:
             return Response(businesses, status=200)
         
-        # If no Google API key or no results, return helpful message
+        # If no Google API key, return empty array with error in console
         if not os.getenv('GOOGLE_PLACES_API_KEY'):
-            return Response({
-                'error': 'Google Places API key not configured',
-                'message': 'Please add GOOGLE_PLACES_API_KEY to your .env file to get real business data',
-                'setup_url': 'https://developers.google.com/maps/documentation/places/web-service/get-api-key'
-            }, status=503)
+            print('ERROR: Google Places API key not configured')
+            print('Please add GOOGLE_PLACES_API_KEY to your .env file')
+            print('Setup guide: https://developers.google.com/maps/documentation/places/web-service/get-api-key')
+            return Response([], status=200)
         
-        # No results found
-        return Response({
-            'message': f'No businesses found for: {city}, {country} - {category}',
-            'results': []
-        }, status=200)
+        # No results found - return empty array
+        print(f'No businesses found for: {city}, {country} - {category}')
+        return Response([], status=200)
 
 
 class TestGeminiView(APIView):

@@ -38,11 +38,23 @@ const BusinessSearch: React.FC = () => {
       const params = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => value !== '')
       );
-      // Use AI generator to synthesize plausible local businesses
+      // Use Google Places API to get real businesses
       const response = await aiAPI.generateBusinesses(params);
-      setBusinesses(response.data as Business[]);
+      
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        setBusinesses(response.data as Business[]);
+      } else if (response.data && Array.isArray(response.data.results)) {
+        setBusinesses(response.data.results as Business[]);
+      } else if (response.data && response.data.message) {
+        setError(response.data.message);
+        setBusinesses([]);
+      } else {
+        setBusinesses([]);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch businesses');
+      setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to fetch businesses');
+      setBusinesses([]);
     } finally {
       setLoading(false);
     }
@@ -137,6 +149,21 @@ const BusinessSearch: React.FC = () => {
         <div className="bg-green-50 border border-green-300 text-green-800 px-4 py-3 rounded mb-4 text-sm">
           <strong>✅ Real Business Data:</strong> These are real businesses from Google Places API. 
           Contact information and addresses are verified from Google's database.
+        </div>
+      )}
+
+      {/* No Results Info */}
+      {!loading && businesses.length === 0 && !error && (
+        <div className="bg-blue-50 border border-blue-300 text-blue-800 px-4 py-3 rounded mb-4 text-sm">
+          <strong>ℹ️ No businesses found.</strong> This could mean:
+          <ul className="list-disc ml-5 mt-2">
+            <li>Google Places API key not configured (check backend console)</li>
+            <li>No businesses match your search criteria</li>
+            <li>API billing not enabled</li>
+          </ul>
+          <p className="mt-2">
+            <strong>Setup Guide:</strong> See <code>GOOGLE_PLACES_SETUP.md</code> for instructions.
+          </p>
         </div>
       )}
 
