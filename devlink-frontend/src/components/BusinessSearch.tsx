@@ -132,6 +132,15 @@ const BusinessSearch: React.FC = () => {
         </button>
       </div>
 
+      {/* Disclaimer */}
+      {businesses.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded mb-4 text-sm">
+          <strong>⚠️ Note:</strong> These are AI-generated example businesses for demonstration purposes. 
+          They may not represent real businesses. For actual business data, please integrate with Google Maps API, 
+          Yelp API, or other business directory services.
+        </div>
+      )}
+
       {/* Results */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">

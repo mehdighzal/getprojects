@@ -76,10 +76,18 @@ class GenerateBusinessesView(APIView):
                 genai.configure(api_key=api_key)
                 model = genai.GenerativeModel(model_name)
                 prompt = (
-                    "You are a data generator. Create 10 fictional but plausible local businesses as JSON array.\n"
-                    f"Filters: country='{country}', city='{city}', category='{category}', search='{search}'.\n"
-                    "Each item must include: id (int), name (string), email (string), phone (string|optional), website (string|optional), category, country, city, address.\n"
-                    "Respond with ONLY JSON, no extra text."
+                    "IMPORTANT: Generate 10 REALISTIC and PLAUSIBLE local business examples that could exist in the real world.\n"
+                    f"Location: {city}, {country}\n"
+                    f"Category: {category}\n"
+                    f"Search term: {search}\n\n"
+                    "Use realistic business names, addresses that follow the local format, and plausible contact details.\n"
+                    "For emails: use realistic domain patterns (businessname@gmail.com, info@businessname.it, etc.)\n"
+                    "For phone: use proper country/city format\n"
+                    "For addresses: use real street name patterns for that city\n\n"
+                    "Return ONLY a JSON array with these fields per business:\n"
+                    "id (int), name (string), email (string), phone (string, optional), website (string, optional), category (string), country (string), city (string), address (string)\n\n"
+                    "Example format: [{\"id\":1,\"name\":\"...\",\"email\":\"...\",\"phone\":\"...\",\"website\":\"...\",\"category\":\"...\",\"country\":\"...\",\"city\":\"...\",\"address\":\"...\"}]\n"
+                    "Respond with ONLY the JSON array, no markdown, no extra text."
                 )
                 resp = model.generate_content(prompt)
                 text = (resp.text or '').strip()

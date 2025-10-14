@@ -43,12 +43,15 @@ class EmailGenerator:
                 genai.configure(api_key=api_key)
                 model = genai.GenerativeModel(model_name)
                 prompt = (
-                    "Write a concise, friendly outreach email for a developer.\n"
-                    f"Business name: {business_name}\n"
-                    f"Business category: {business_category}\n"
-                    f"Developer name: {developer_name}\n"
-                    f"Developer services: {developer_services}\n"
-                    "Return JSON with keys subject and body only."
+                    f"Write a professional outreach email FROM {developer_name} (a developer) TO {business_name} (a {business_category} business).\n"
+                    f"The developer offers: {developer_services}\n"
+                    f"The email should:\n"
+                    f"- Be written from the developer's perspective\n"
+                    f"- Introduce the developer and their services\n"
+                    f"- Express interest in helping the business with their digital needs\n"
+                    f"- Request a brief meeting or call\n"
+                    f"- Be professional, concise, and friendly\n"
+                    f"Return ONLY valid JSON with keys 'subject' and 'body'. Example: {{\"subject\":\"...\",\"body\":\"...\"}}"
                 )
                 resp = model.generate_content(prompt)
                 text = resp.text or ''

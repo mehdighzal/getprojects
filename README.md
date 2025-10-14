@@ -1,3 +1,16 @@
+# DevLink - Business Outreach Platform
+
+## ⚠️ Important: Business Data Source
+
+**Current Status:** The business search uses **AI-generated example businesses** for demonstration. These are NOT real businesses and won't be found on Google Maps.
+
+**For Real Business Data:** Integrate with one of these APIs:
+- **Google Places API** (recommended) - [Documentation](https://developers.google.com/maps/documentation/places/web-service)
+- **Yelp Fusion API** - [Documentation](https://www.yelp.com/developers)
+- **Foursquare Places API** - [Documentation](https://location.foursquare.com/developer/)
+
+---
+
 ## Environment setup
 
 Backend `.env` keys (create `./.env`):
