@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Business, businessAPI, aiAPI } from '../services/api';
+import { Business, aiAPI } from '../services/api';
 import SendEmailModal from './SendEmailModal';
 
 const BusinessSearch: React.FC = () => {
@@ -132,12 +132,11 @@ const BusinessSearch: React.FC = () => {
         </button>
       </div>
 
-      {/* Disclaimer */}
+      {/* Info Banner */}
       {businesses.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded mb-4 text-sm">
-          <strong>⚠️ Note:</strong> These are AI-generated example businesses for demonstration purposes. 
-          They may not represent real businesses. For actual business data, please integrate with Google Maps API, 
-          Yelp API, or other business directory services.
+        <div className="bg-green-50 border border-green-300 text-green-800 px-4 py-3 rounded mb-4 text-sm">
+          <strong>✅ Real Business Data:</strong> These are real businesses from Google Places API. 
+          Contact information and addresses are verified from Google's database.
         </div>
       )}
 

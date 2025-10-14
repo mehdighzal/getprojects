@@ -1,13 +1,18 @@
 # DevLink - Business Outreach Platform
 
-## ⚠️ Important: Business Data Source
+## ✅ Real Business Data via Google Places API
 
-**Current Status:** The business search uses **AI-generated example businesses** for demonstration. These are NOT real businesses and won't be found on Google Maps.
+This application uses **Google Places API** to fetch real, verified businesses with accurate contact information, addresses, ratings, and more.
 
-**For Real Business Data:** Integrate with one of these APIs:
-- **Google Places API** (recommended) - [Documentation](https://developers.google.com/maps/documentation/places/web-service)
-- **Yelp Fusion API** - [Documentation](https://www.yelp.com/developers)
-- **Foursquare Places API** - [Documentation](https://location.foursquare.com/developer/)
+### Setting Up Google Places API:
+
+1. **Get API Key:** Visit [Google Cloud Console](https://console.cloud.google.com/)
+2. **Enable APIs:** Enable "Places API" and "Geocoding API"
+3. **Add to `.env`:** 
+   ```bash
+   GOOGLE_PLACES_API_KEY=your_api_key_here
+   ```
+4. **Billing:** Google Places API requires billing enabled (offers $200/month free credit)
 
 ---
 
@@ -52,9 +57,12 @@ GMAIL_OAUTH2_ACCESS_TOKEN=
 # Outlook OAuth2 (supply fresh access token)
 OUTLOOK_OAUTH2_ACCESS_TOKEN=
 
-# Gemini AI (optional)
+# Gemini AI (for email generation)
 GEMINI_API_KEY=your_gemini_key
-GEMINI_MODEL=gemini-1.5-pro
+GEMINI_MODEL=models/gemini-2.0-flash
+
+# Google Places API (for real business search)
+GOOGLE_PLACES_API_KEY=your_google_places_api_key
 ```
 
 Frontend `.env.local` keys (create `./devlink-frontend/.env.local`):

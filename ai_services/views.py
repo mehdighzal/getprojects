@@ -58,77 +58,43 @@ class GenerateBulkEmailView(APIView):
 
 
 class GenerateBusinessesView(APIView):
-    """Generate a list of plausible local businesses using AI (or fallback)."""
+    """Fetch real businesses from Google Places API."""
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        from businesses.google_places_service import GooglePlacesService
+        
         params = request.data or {}
         country = params.get('country', '')
         city = params.get('city', '')
         category = params.get('category', '')
         search = params.get('search', '')
 
-        api_key = os.getenv('GEMINI_API_KEY', '')
-        model_name = os.getenv('GEMINI_MODEL', 'models/gemini-2.0-flash')
-
-        if genai and api_key:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel(model_name)
-                prompt = (
-                    "IMPORTANT: Generate 10 REALISTIC and PLAUSIBLE local business examples that could exist in the real world.\n"
-                    f"Location: {city}, {country}\n"
-                    f"Category: {category}\n"
-                    f"Search term: {search}\n\n"
-                    "Use realistic business names, addresses that follow the local format, and plausible contact details.\n"
-                    "For emails: use realistic domain patterns (businessname@gmail.com, info@businessname.it, etc.)\n"
-                    "For phone: use proper country/city format\n"
-                    "For addresses: use real street name patterns for that city\n\n"
-                    "Return ONLY a JSON array with these fields per business:\n"
-                    "id (int), name (string), email (string), phone (string, optional), website (string, optional), category (string), country (string), city (string), address (string)\n\n"
-                    "Example format: [{\"id\":1,\"name\":\"...\",\"email\":\"...\",\"phone\":\"...\",\"website\":\"...\",\"category\":\"...\",\"country\":\"...\",\"city\":\"...\",\"address\":\"...\"}]\n"
-                    "Respond with ONLY the JSON array, no markdown, no extra text."
-                )
-                resp = model.generate_content(prompt)
-                text = (resp.text or '').strip()
-                import json, re
-                match = re.search(r"\[[\s\S]*\]", text)
-                data = json.loads(match.group(0) if match else text)
-                # Basic validation and normalization
-                normalized = []
-                next_id = 1
-                for item in data:
-                    normalized.append({
-                        'id': int(item.get('id', next_id)),
-                        'name': item.get('name') or f"{category.title()} #{next_id}",
-                        'email': item.get('email') or f"contact{next_id}@example.com",
-                        'phone': item.get('phone') or '',
-                        'website': item.get('website') or '',
-                        'category': item.get('category') or category,
-                        'country': item.get('country') or country,
-                        'city': item.get('city') or city,
-                        'address': item.get('address') or f"{city}"
-                    })
-                    next_id += 1
-                return Response(normalized, status=200)
-            except Exception:
-                pass
-
-        # Fallback deterministic sample
-        sample = []
-        for i in range(1, 11):
-            sample.append({
-                'id': i,
-                'name': f"{category.title() or 'Business'} {city.title() or 'Local'} {i}",
-                'email': f"info{i}@{(city or 'local').lower()}-{(category or 'business').lower()}.example.com",
-                'phone': '',
-                'website': '',
-                'category': category or 'other',
-                'country': country or 'unknown',
-                'city': city or 'unknown',
-                'address': f"{city or 'unknown'}"
-            })
-        return Response(sample, status=200)
+        # Use Google Places API for real business data
+        places_service = GooglePlacesService()
+        businesses = places_service.search_businesses(
+            city=city,
+            country=country,
+            category=category,
+            search=search
+        )
+        
+        if businesses:
+            return Response(businesses, status=200)
+        
+        # If no Google API key or no results, return helpful message
+        if not os.getenv('GOOGLE_PLACES_API_KEY'):
+            return Response({
+                'error': 'Google Places API key not configured',
+                'message': 'Please add GOOGLE_PLACES_API_KEY to your .env file to get real business data',
+                'setup_url': 'https://developers.google.com/maps/documentation/places/web-service/get-api-key'
+            }, status=503)
+        
+        # No results found
+        return Response({
+            'message': f'No businesses found for: {city}, {country} - {category}',
+            'results': []
+        }, status=200)
 
 
 class TestGeminiView(APIView):
