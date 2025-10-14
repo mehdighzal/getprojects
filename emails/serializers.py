@@ -9,3 +9,13 @@ class SendEmailSerializer(serializers.Serializer):
     )
 
 
+class EmailLogSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    subject = serializers.CharField()
+    body = serializers.CharField()
+    recipients = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField()
+
+    def get_recipients(self, obj):
+        return [r.strip() for r in obj.recipients.split(',') if r.strip()]
+

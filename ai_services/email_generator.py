@@ -6,8 +6,20 @@ to reach out to local businesses.
 """
 
 
+import os
+
+try:
+    import google.generativeai as genai  # type: ignore
+except Exception:  # pragma: no cover
+    genai = None
+
+
 class EmailGenerator:
-    """AI service for generating personalized email content."""
+    """AI service for generating personalized email content.
+
+    Uses Gemini via `google-generativeai` when `GEMINI_API_KEY` is set; otherwise
+    falls back to a deterministic template.
+    """
     
     @staticmethod
     def generate_intro_email(business_name, business_category, developer_name, developer_services):
@@ -23,34 +35,49 @@ class EmailGenerator:
         Returns:
             dict: Generated email content with subject and body
         """
-        # Placeholder implementation - replace with actual AI service
+        api_key = os.getenv('GEMINI_API_KEY', '')
+        model_name = os.getenv('GEMINI_MODEL', 'models/gemini-2.0-flash')
+
+        if genai and api_key:
+            try:
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel(model_name)
+                prompt = (
+                    "Write a concise, friendly outreach email for a developer.\n"
+                    f"Business name: {business_name}\n"
+                    f"Business category: {business_category}\n"
+                    f"Developer name: {developer_name}\n"
+                    f"Developer services: {developer_services}\n"
+                    "Return JSON with keys subject and body only."
+                )
+                resp = model.generate_content(prompt)
+                text = resp.text or ''
+                # Very simple parse: attempt to find JSON like {"subject":..., "body":...}
+                import json, re
+                match = re.search(r"\{[\s\S]*\}", text)
+                if match:
+                    data = json.loads(match.group(0))
+                    subject = data.get('subject') or f"Partnership Opportunity - {business_name}"
+                    body = data.get('body') or ''
+                else:
+                    subject = f"Partnership Opportunity - {business_name}"
+                    body = text.strip()
+                if not body:
+                    body = f"Hello {business_name}, this is {developer_name}. I offer {developer_services}. I'd love to discuss how I can help your {business_category} business."
+                return {'subject': subject, 'body': body, 'source': 'gemini'}
+            except Exception:
+                # Fall back to template if API fails
+                pass
+
         subject = f"Partnership Opportunity - {business_name}"
-        
-        body = f"""Dear {business_name} Team,
-
-I hope this email finds you well. My name is {developer_name}, and I'm a developer specializing in {developer_services}.
-
-I came across your {business_category} business and was impressed by your work. I believe there could be a great opportunity for collaboration.
-
-I specialize in:
-{developer_services}
-
-I'm reaching out to see if you might be interested in discussing how we could work together to enhance your business's digital presence.
-
-Would you be available for a brief call this week to explore potential collaboration opportunities?
-
-Looking forward to hearing from you.
-
-Best regards,
-{developer_name}
-
----
-This email was generated using AI assistance to help developers connect with local businesses."""
-        
-        return {
-            'subject': subject,
-            'body': body
-        }
+        body = (
+            f"Dear {business_name} Team,\n\n"
+            f"My name is {developer_name}, and I specialize in {developer_services}.\n\n"
+            f"I was impressed by your {business_category} work and would love to explore how we could collaborate to enhance your digital presence.\n\n"
+            f"Would you be open to a brief call this week?\n\n"
+            f"Best regards,\n{developer_name}"
+        )
+        return {'subject': subject, 'body': body, 'source': 'template'}
     
     @staticmethod
     def generate_bulk_email_template(category, developer_name, developer_services):

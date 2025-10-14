@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Business, businessAPI } from '../services/api';
+import { Business, businessAPI, aiAPI } from '../services/api';
+import SendEmailModal from './SendEmailModal';
 
 const BusinessSearch: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState<string | undefined>(undefined);
   const [filters, setFilters] = useState({
     country: '',
     city: '',
@@ -35,8 +38,9 @@ const BusinessSearch: React.FC = () => {
       const params = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => value !== '')
       );
-      const response = await businessAPI.getBusinesses(params);
-      setBusinesses(response.data);
+      // Use AI generator to synthesize plausible local businesses
+      const response = await aiAPI.generateBusinesses(params);
+      setBusinesses(response.data as Business[]);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch businesses');
     } finally {
@@ -172,10 +176,16 @@ const BusinessSearch: React.FC = () => {
             </div>
 
             <div className="mt-4 flex space-x-2">
-              <button className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md hover:bg-green-700 text-sm">
+              <button
+                onClick={() => { setEmailRecipient(business.email); setEmailOpen(true); }}
+                className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md hover:bg-green-700 text-sm"
+              >
                 Generate Email
               </button>
-              <button className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md hover:bg-blue-700 text-sm">
+              <button
+                onClick={() => { setEmailRecipient(business.email); setEmailOpen(true); }}
+                className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md hover:bg-blue-700 text-sm"
+              >
                 Send Email
               </button>
             </div>
@@ -188,6 +198,14 @@ const BusinessSearch: React.FC = () => {
           No businesses found. Try adjusting your search filters.
         </div>
       )}
+
+      <SendEmailModal
+        isOpen={emailOpen}
+        defaultRecipient={emailRecipient}
+        businessName={businesses.find(b => b.email === emailRecipient)?.name}
+        businessCategory={businesses.find(b => b.email === emailRecipient)?.category}
+        onClose={() => setEmailOpen(false)}
+      />
     </div>
   );
 };

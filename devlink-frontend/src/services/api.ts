@@ -76,6 +76,8 @@ export const businessAPI = {
 export const emailAPI = {
   sendEmail: (emailData: EmailRequest) =>
     api.post('/email/send/', emailData),
+  history: (page: number, page_size = 10) =>
+    api.get('/email/history/', { params: { page, page_size } }),
 };
 
 export const aiAPI = {
@@ -84,6 +86,9 @@ export const aiAPI = {
   
   generateBulkEmail: (data: { category: string; developer_name: string; developer_services: string }) =>
     api.post('/ai/generate-bulk-email/', data),
+
+  generateBusinesses: (filters: { country?: string; city?: string; category?: string; search?: string }) =>
+    api.post('/ai/generate-businesses/', filters),
 };
 
 export default api;

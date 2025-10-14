@@ -1,9 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import BusinessSearch from './BusinessSearch';
+import { emailAPI } from '../services/api';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const [tab, setTab] = useState<'search' | 'history'>('search');
+  const [history, setHistory] = useState<any[]>();
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  const loadHistory = async () => {
+    setLoading(true);
+    try {
+      const res = await emailAPI.history(page, pageSize);
+      setHistory(res.data.results);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'history') {
+      loadHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, page]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -31,7 +54,56 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <main className="py-8">
-        <BusinessSearch />
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-6 flex space-x-3">
+            <button
+              onClick={() => setTab('search')}
+              className={`px-4 py-2 rounded-md ${tab==='search' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+            >
+              Search
+            </button>
+            <button
+              onClick={() => setTab('history')}
+              className={`px-4 py-2 rounded-md ${tab==='history' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+            >
+              Email History
+            </button>
+          </div>
+
+          {tab === 'search' && <BusinessSearch />}
+
+          {tab === 'history' && (
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-4 border-b font-medium">Sent Emails</div>
+              <div className="p-4">
+                {loading ? (
+                  <div>Loading...</div>
+                ) : (
+                  <div className="space-y-4">
+                    {(history || []).map((item) => (
+                      <div key={item.id} className="border rounded p-3">
+                        <div className="text-sm text-gray-500">{new Date(item.created_at).toLocaleString()}</div>
+                        <div className="font-semibold">{item.subject}</div>
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{item.body}</div>
+                        <div className="text-sm text-gray-600 mt-2">
+                          To: {item.recipients.join(', ')}
+                        </div>
+                      </div>
+                    ))}
+                    {(!history || history.length === 0) && (
+                      <div className="text-gray-500">No emails yet.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border-t flex justify-between">
+                <button disabled={page===1} onClick={() => setPage(p => Math.max(1, p-1))} className="px-3 py-1 border rounded disabled:opacity-50">Prev</button>
+                <div>Page {page}</div>
+                <button onClick={() => setPage(p => p+1)} className="px-3 py-1 border rounded">Next</button>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Footer */}

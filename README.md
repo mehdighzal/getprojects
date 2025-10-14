@@ -19,6 +19,29 @@ DB_PASSWORD=
 DB_HOST=
 DB_PORT=
 CORS_ALLOWED_ORIGINS=http://localhost:3001,http://127.0.0.1:3001,http://192.168.56.1:3001
+
+# SMTP (choose one provider)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=true
+EMAIL_HOST_USER=your_email@gmail.com
+EMAIL_HOST_PASSWORD=your_app_password
+
+# Email auth method
+# basic           -> username/password (e.g., Gmail App Password)
+# gmail_oauth2    -> XOAUTH2 using Gmail access token
+# outlook_oauth2  -> XOAUTH2 using Outlook access token
+EMAIL_AUTH_METHOD=basic
+
+# Gmail OAuth2 (supply fresh access token)
+GMAIL_OAUTH2_ACCESS_TOKEN=
+
+# Outlook OAuth2 (supply fresh access token)
+OUTLOOK_OAUTH2_ACCESS_TOKEN=
+
+# Gemini AI (optional)
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-1.5-pro
 ```
 
 Frontend `.env.local` keys (create `./devlink-frontend/.env.local`):
