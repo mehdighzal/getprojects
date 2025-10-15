@@ -4,6 +4,7 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import Dashboard from './components/Dashboard';
 import Notification from './components/Notification';
+import ToastContainer from './components/ToastContainer';
 
 const AppContent: React.FC = () => {
   const { user, loading, sessionExpired, clearSessionExpired } = useAuth();
@@ -21,7 +22,12 @@ const AppContent: React.FC = () => {
   }
 
   if (user) {
-    return <Dashboard />;
+    return (
+      <>
+        <Dashboard />
+        <ToastContainer />
+      </>
+    );
   }
 
   return (

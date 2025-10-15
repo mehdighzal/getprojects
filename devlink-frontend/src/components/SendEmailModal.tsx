@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { emailAPI, aiAPI } from '../services/api';
+import { useToast } from '../hooks/useToast';
 
 interface Props {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
   const [developerName, setDeveloperName] = useState('');
   const [developerServices, setDeveloperServices] = useState('Web development and digital solutions');
   const [generating, setGenerating] = useState(false);
+  const { showSuccess, showError } = useToast();
 
   // Update recipients when modal opens with new business
   useEffect(() => {
@@ -49,11 +51,15 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
     try {
       const list = parseRecipients(recipients);
       await emailAPI.sendEmail({ subject, body, recipients: list });
-      setSuccess(`Sent to ${list.length} recipient(s)`);
+      const successMessage = `Email sent to ${list.length} recipient(s) successfully!`;
+      setSuccess(successMessage);
+      showSuccess(successMessage);
       setSubject('');
       setBody('');
     } catch (e: any) {
-      setError(e.response?.data?.detail || 'Failed to send email');
+      const errorMessage = e.response?.data?.detail || 'Failed to send email';
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setSending(false);
     }
@@ -72,8 +78,11 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
       });
       setSubject(resp.data.subject || '');
       setBody(resp.data.body || '');
+      showSuccess('Email generated successfully with AI!');
     } catch (e: any) {
-      setError(e.response?.data?.detail || 'Failed to generate with AI');
+      const errorMessage = e.response?.data?.detail || 'Failed to generate with AI';
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setGenerating(false);
     }

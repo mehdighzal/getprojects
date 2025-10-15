@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import BusinessSearch from './BusinessSearch';
 import { emailAPI } from '../services/api';
+import LoadingSpinner from './LoadingSpinner';
+import EmptyState from './EmptyState';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -77,10 +79,10 @@ const Dashboard: React.FC = () => {
               <div className="p-4 border-b font-medium">Sent Emails</div>
               <div className="p-4">
                 {loading ? (
-                  <div>Loading...</div>
-                ) : (
+                  <LoadingSpinner text="Loading email history..." />
+                ) : history && history.length > 0 ? (
                   <div className="space-y-4">
-                    {(history || []).map((item) => (
+                    {history.map((item) => (
                       <div key={item.id} className="border rounded p-3">
                         <div className="text-sm text-gray-500">{new Date(item.created_at).toLocaleString()}</div>
                         <div className="font-semibold">{item.subject}</div>
@@ -90,10 +92,17 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
                     ))}
-                    {(!history || history.length === 0) && (
-                      <div className="text-gray-500">No emails yet.</div>
-                    )}
                   </div>
+                ) : (
+                  <EmptyState
+                    title="No emails sent yet"
+                    description="Start by searching for businesses and sending your first email!"
+                    icon="📧"
+                    action={{
+                      label: "Search Businesses",
+                      onClick: () => setTab('search')
+                    }}
+                  />
                 )}
               </div>
               <div className="p-4 border-t flex justify-between">

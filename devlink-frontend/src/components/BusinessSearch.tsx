@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Business, aiAPI } from '../services/api';
 import SendEmailModal from './SendEmailModal';
+import BusinessCardSkeleton from './BusinessCardSkeleton';
+import EmptyState from './EmptyState';
+import LoadingSpinner from './LoadingSpinner';
+import { useToast } from '../hooks/useToast';
 
 const BusinessSearch: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -8,6 +12,7 @@ const BusinessSearch: React.FC = () => {
   const [error, setError] = useState('');
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState<string | undefined>(undefined);
+  const { showSuccess, showError } = useToast();
   const [filters, setFilters] = useState({
     country: '',
     city: '',
@@ -44,8 +49,14 @@ const BusinessSearch: React.FC = () => {
       // Handle different response formats
       if (Array.isArray(response.data)) {
         setBusinesses(response.data as Business[]);
+        if (response.data.length > 0) {
+          showSuccess(`Found ${response.data.length} businesses!`);
+        }
       } else if (response.data && Array.isArray(response.data.results)) {
         setBusinesses(response.data.results as Business[]);
+        if (response.data.results.length > 0) {
+          showSuccess(`Found ${response.data.results.length} businesses!`);
+        }
       } else if (response.data && response.data.message) {
         setError(response.data.message);
         setBusinesses([]);
@@ -53,8 +64,10 @@ const BusinessSearch: React.FC = () => {
         setBusinesses([]);
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.response?.data?.message || 'Failed to fetch businesses');
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || 'Failed to fetch businesses';
+      setError(errorMessage);
       setBusinesses([]);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -138,9 +151,16 @@ const BusinessSearch: React.FC = () => {
         <button
           onClick={searchBusinesses}
           disabled={loading}
-          className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center justify-center space-x-2"
         >
-          {loading ? 'Searching...' : 'Search Businesses'}
+          {loading ? (
+            <>
+              <LoadingSpinner size="sm" />
+              <span>Searching...</span>
+            </>
+          ) : (
+            <span>Search Businesses</span>
+          )}
         </button>
       </div>
 
@@ -174,8 +194,35 @@ const BusinessSearch: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {businesses.map((business) => (
+      {/* Loading State */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <BusinessCardSkeleton key={index} />
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && businesses.length === 0 && !error && (
+        <EmptyState
+          title="No businesses found"
+          description="Try adjusting your search criteria or search in a different location."
+          icon="🔍"
+          action={{
+            label: "Clear filters",
+            onClick: () => {
+              setFilters({ country: '', city: '', category: '', search: '' });
+              searchBusinesses();
+            }
+          }}
+        />
+      )}
+
+      {/* Results */}
+      {!loading && businesses.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {businesses.map((business) => (
           <div key={business.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
               {business.name}
@@ -225,12 +272,7 @@ const BusinessSearch: React.FC = () => {
               </button>
             </div>
           </div>
-        ))}
-      </div>
-
-      {businesses.length === 0 && !loading && (
-        <div className="text-center py-8 text-gray-500">
-          No businesses found. Try adjusting your search filters.
+          ))}
         </div>
       )}
 
