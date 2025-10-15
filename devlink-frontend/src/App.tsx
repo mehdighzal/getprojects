@@ -3,9 +3,10 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import Dashboard from './components/Dashboard';
+import Notification from './components/Notification';
 
 const AppContent: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, sessionExpired, clearSessionExpired } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
 
   if (loading) {
@@ -24,20 +25,31 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">DevLink</h1>
-          <p className="text-gray-600">Connect developers with local businesses</p>
+    <>
+      {sessionExpired && (
+        <Notification
+          message="Your session has expired. Please login again."
+          type="error"
+          onClose={clearSessionExpired}
+          duration={8000}
+        />
+      )}
+      
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">DevLink</h1>
+            <p className="text-gray-600">Connect developers with local businesses</p>
+          </div>
+          
+          {isRegistering ? (
+            <RegisterForm onSwitchToLogin={() => setIsRegistering(false)} />
+          ) : (
+            <LoginForm onSwitchToRegister={() => setIsRegistering(true)} />
+          )}
         </div>
-        
-        {isRegistering ? (
-          <RegisterForm onSwitchToLogin={() => setIsRegistering(false)} />
-        ) : (
-          <LoginForm onSwitchToRegister={() => setIsRegistering(true)} />
-        )}
       </div>
-    </div>
+    </>
   );
 };
 

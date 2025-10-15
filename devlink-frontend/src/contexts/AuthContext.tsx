@@ -7,6 +7,8 @@ interface AuthContextType {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  sessionExpired: boolean;
+  clearSessionExpired: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +28,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -34,8 +37,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .then(response => {
           setUser(response.data);
         })
-        .catch(() => {
-          localStorage.removeItem('token');
+        .catch((error) => {
+          // Handle token expiration or invalid tokens
+          if (error.response?.status === 401) {
+            console.log('Token expired or invalid, clearing token');
+            localStorage.removeItem('token');
+            setUser(null);
+            setSessionExpired(true);
+          }
         })
         .finally(() => {
           setLoading(false);
@@ -43,6 +52,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       setLoading(false);
     }
+
+    // Listen for token expiration events from API interceptor
+    const handleTokenExpired = () => {
+      setUser(null);
+      setSessionExpired(true);
+    };
+
+    window.addEventListener('tokenExpired', handleTokenExpired);
+    return () => window.removeEventListener('tokenExpired', handleTokenExpired);
   }, []);
 
   const login = async (username: string, password: string) => {
@@ -62,6 +80,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    setSessionExpired(false);
+  };
+
+  const clearSessionExpired = () => {
+    setSessionExpired(false);
   };
 
   const value = {
@@ -70,6 +93,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     loading,
+    sessionExpired,
+    clearSessionExpired,
   };
 
   return (

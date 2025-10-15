@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { emailAPI, aiAPI } from '../services/api';
 
 interface Props {
@@ -19,6 +19,20 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
   const [developerName, setDeveloperName] = useState('');
   const [developerServices, setDeveloperServices] = useState('Web development and digital solutions');
   const [generating, setGenerating] = useState(false);
+
+  // Update recipients when modal opens with new business
+  useEffect(() => {
+    if (isOpen && defaultRecipient) {
+      setRecipients(defaultRecipient);
+    } else if (!isOpen) {
+      // Reset form when modal closes
+      setRecipients('');
+      setSubject('');
+      setBody('');
+      setError('');
+      setSuccess('');
+    }
+  }, [isOpen, defaultRecipient]);
 
   if (!isOpen) return null;
 
@@ -117,7 +131,7 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
               type="text"
               value={recipients}
               onChange={(e) => setRecipients(e.target.value)}
-              placeholder="comma,separated@example.com"
+              placeholder="Business email (auto-filled when you click Send Email)"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

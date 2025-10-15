@@ -18,6 +18,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle token expiration globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid - clear it
+      localStorage.removeItem('token');
+      console.log('Token expired, please login again');
+      
+      // Dispatch a custom event that AuthContext can listen to
+      window.dispatchEvent(new CustomEvent('tokenExpired'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface User {
   id: number;
   username: string;
