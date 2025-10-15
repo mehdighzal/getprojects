@@ -79,6 +79,19 @@ export const authAPI = {
     api.post('/auth/login/', { username, password }),
   
   getMe: () => api.get('/auth/me/'),
+  
+  getProfile: () => api.get('/auth/profile/'),
+  
+  updateProfile: (data: any) => api.put('/auth/profile/', data),
+  
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) =>
+    api.post('/auth/change-password/', { 
+      current_password: currentPassword, 
+      new_password: newPassword, 
+      confirm_password: confirmPassword 
+    }),
+  
+  getStats: () => api.get('/auth/stats/'),
 };
 
 export const businessAPI = {
