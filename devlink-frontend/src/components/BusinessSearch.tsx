@@ -14,6 +14,7 @@ const BusinessSearch: React.FC = () => {
   const [emailRecipient, setEmailRecipient] = useState<string | undefined>(undefined);
   const [selectedBusinesses, setSelectedBusinesses] = useState<Set<number>>(new Set());
   const [bulkCampaignLoading, setBulkCampaignLoading] = useState(false);
+  const [searchPage, setSearchPage] = useState(0); // Add page counter for variety
   const { showSuccess, showError } = useToast();
   const [filters, setFilters] = useState({
     country: '',
@@ -37,7 +38,7 @@ const BusinessSearch: React.FC = () => {
     { value: 'other', label: 'Altro' },
   ];
 
-  const searchBusinesses = async () => {
+  const searchBusinesses = async (page: number = searchPage) => {
     setLoading(true);
     setError('');
 
@@ -45,6 +46,8 @@ const BusinessSearch: React.FC = () => {
       const params = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => value !== '')
       );
+      // Add page parameter for variety
+      params.page = page.toString();
       // Use Google Places API to get real businesses
       const response = await aiAPI.generateBusinesses(params);
       
@@ -73,6 +76,14 @@ const BusinessSearch: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const refreshResults = async () => {
+    // Increment page counter to get different results
+    const newPage = searchPage + 1;
+    setSearchPage(newPage);
+    await searchBusinesses(newPage);
+    showSuccess('Results refreshed with new businesses!');
   };
 
   useEffect(() => {
@@ -193,7 +204,7 @@ const BusinessSearch: React.FC = () => {
 
              <div className="mt-4 flex space-x-3">
                <button
-                 onClick={searchBusinesses}
+                 onClick={() => searchBusinesses()}
                  disabled={loading}
                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center justify-center space-x-2"
                >
@@ -205,6 +216,18 @@ const BusinessSearch: React.FC = () => {
                  ) : (
                    <span>Search Businesses</span>
                  )}
+               </button>
+               
+               <button
+                 onClick={refreshResults}
+                 disabled={loading}
+                 className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 flex items-center justify-center space-x-2"
+                 title="Get different results"
+               >
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                 </svg>
+                 <span>Refresh</span>
                </button>
                
                {businesses.length > 0 && (
@@ -236,8 +259,15 @@ const BusinessSearch: React.FC = () => {
       {/* Info Banner */}
       {businesses.length > 0 && (
         <div className="bg-green-50 border border-green-300 text-green-800 px-4 py-3 rounded mb-4 text-sm">
-          <strong>✅ Real Business Data:</strong> These are real businesses from Google Places API. 
-          Contact information and addresses are verified from Google's database.
+          <div className="flex justify-between items-center">
+            <div>
+              <strong>✅ Real Business Data:</strong> These are real businesses from Google Places API. 
+              Contact information and addresses are verified from Google's database.
+            </div>
+            <div className="text-xs bg-green-200 px-2 py-1 rounded">
+              Page {searchPage + 1} • {businesses.length} results
+            </div>
+          </div>
         </div>
       )}
 

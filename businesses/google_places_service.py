@@ -3,6 +3,7 @@ Google Places API Service
 Fetches real business data from Google Places API
 """
 import os
+import random
 from typing import List, Dict, Optional
 import googlemaps
 from django.conf import settings
@@ -26,7 +27,7 @@ class GooglePlacesService:
         radius: int = 5000
     ) -> List[Dict]:
         """
-        Search for real businesses using Google Places API
+        Search for real businesses using Google Places API with randomization
         
         Args:
             city: City name
@@ -36,7 +37,7 @@ class GooglePlacesService:
             radius: Search radius in meters (default 5000m = 5km)
             
         Returns:
-            List of business dictionaries
+            List of business dictionaries (randomized each time)
         """
         if not self.client:
             return []
@@ -62,25 +63,65 @@ class GooglePlacesService:
             # Build search query
             query = search or category or 'business'
             
-            # Search places using text search (more flexible)
+            # Get multiple result sets using different strategies for variety
+            all_results = []
+            
+            # Strategy 1: Text search with main query
             if search or not place_type:
                 places_result = self.client.places(
                     query=f"{query} in {location_query}",
                     location=(lat, lng),
                     radius=radius
                 )
+                all_results.extend(places_result.get('results', []))
             else:
-                # Use nearby search with type
+                # Strategy 1: Nearby search with type
                 places_result = self.client.places_nearby(
                     location=(lat, lng),
                     radius=radius,
                     type=place_type,
                     keyword=query
                 )
+                all_results.extend(places_result.get('results', []))
+            
+            # Strategy 2: Additional searches with variations for more variety
+            search_variations = [
+                f"{category} near {location_query}" if category else None,
+                f"{query} {city}" if city else None,
+                f"best {category} {city}" if category and city else None,
+                f"top {query} {location_query}" if query else None,
+            ]
+            
+            for variation in search_variations:
+                if variation and len(all_results) < 30:  # Limit to avoid too many API calls
+                    try:
+                        var_result = self.client.places(
+                            query=variation,
+                            location=(lat, lng),
+                            radius=radius
+                        )
+                        all_results.extend(var_result.get('results', []))
+                    except:
+                        continue
+            
+            # Remove duplicates based on place_id
+            seen_place_ids = set()
+            unique_results = []
+            for result in all_results:
+                place_id = result.get('place_id')
+                if place_id and place_id not in seen_place_ids:
+                    seen_place_ids.add(place_id)
+                    unique_results.append(result)
+            
+            # Randomize the results to get different businesses each time
+            random.shuffle(unique_results)
+            
+            # Take up to 15 results (more variety)
+            selected_results = unique_results[:15]
             
             # Format results
             businesses = []
-            for idx, place in enumerate(places_result.get('results', [])[:10]):
+            for idx, place in enumerate(selected_results):
                 business = self._format_place(place, idx + 1, city, country, category)
                 businesses.append(business)
             
@@ -166,4 +207,96 @@ class GooglePlacesService:
         # Fallback: generate from business name
         clean_name = business_name.lower().replace(' ', '').replace("'", '')[:20]
         return f"info@{clean_name}.com"
+    
+    def search_businesses_with_pagination(
+        self, 
+        city: str = '', 
+        country: str = '', 
+        category: str = '', 
+        search: str = '',
+        radius: int = 5000,
+        page: int = 0
+    ) -> List[Dict]:
+        """
+        Search for businesses with pagination support for even more variety
+        
+        Args:
+            city: City name
+            country: Country name
+            category: Business category/type
+            search: Additional search keywords
+            radius: Search radius in meters
+            page: Page number (0-based) for pagination
+            
+        Returns:
+            List of business dictionaries
+        """
+        if not self.client:
+            return []
+        
+        try:
+            # Build location query
+            location_query = f"{city}, {country}" if city and country else city or country
+            
+            # Get coordinates for the location
+            if location_query:
+                geocode_result = self.client.geocode(location_query)
+                if not geocode_result:
+                    return []
+                
+                location = geocode_result[0]['geometry']['location']
+                lat, lng = location['lat'], location['lng']
+            else:
+                return []
+            
+            # Map category to Google Places type
+            place_type = self._map_category_to_type(category)
+            
+            # Build search query
+            query = search or category or 'business'
+            
+            # Use different search strategies based on page number
+            search_strategies = [
+                f"{query} in {location_query}",
+                f"{category} {city}" if category and city else f"{query} {city}",
+                f"best {category} {location_query}" if category else f"top {query} {location_query}",
+                f"{query} near {location_query}",
+                f"popular {category} {city}" if category and city else f"recommended {query} {city}",
+            ]
+            
+            # Select strategy based on page number
+            strategy_index = page % len(search_strategies)
+            selected_strategy = search_strategies[strategy_index]
+            
+            # Add some randomization to the query
+            random_modifiers = ["", " popular", " best", " top rated", " recommended"]
+            random_modifier = random.choice(random_modifiers)
+            final_query = selected_strategy + random_modifier
+            
+            # Search places
+            places_result = self.client.places(
+                query=final_query,
+                location=(lat, lng),
+                radius=radius
+            )
+            
+            results = places_result.get('results', [])
+            
+            # Randomize results
+            random.shuffle(results)
+            
+            # Take up to 12 results
+            selected_results = results[:12]
+            
+            # Format results
+            businesses = []
+            for idx, place in enumerate(selected_results):
+                business = self._format_place(place, idx + 1, city, country, category)
+                businesses.append(business)
+            
+            return businesses
+            
+        except Exception as e:
+            print(f"Google Places API Error: {str(e)}")
+            return []
 

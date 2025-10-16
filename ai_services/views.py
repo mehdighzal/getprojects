@@ -58,26 +58,43 @@ class GenerateBulkEmailView(APIView):
 
 
 class GenerateBusinessesView(APIView):
-    """Fetch real businesses from Google Places API."""
+    """Fetch real businesses from Google Places API with randomization."""
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         from businesses.google_places_service import GooglePlacesService
+        import random
         
         params = request.data or {}
         country = params.get('country', '')
         city = params.get('city', '')
         category = params.get('category', '')
         search = params.get('search', '')
+        page = params.get('page', 0)  # Add page parameter for pagination
 
         # Use Google Places API for real business data
         places_service = GooglePlacesService()
-        businesses = places_service.search_businesses(
-            city=city,
-            country=country,
-            category=category,
-            search=search
-        )
+        
+        # Randomly choose between different search methods for variety
+        search_methods = [
+            lambda: places_service.search_businesses(
+                city=city,
+                country=country,
+                category=category,
+                search=search
+            ),
+            lambda: places_service.search_businesses_with_pagination(
+                city=city,
+                country=country,
+                category=category,
+                search=search,
+                page=page
+            )
+        ]
+        
+        # Randomly select a search method
+        selected_method = random.choice(search_methods)
+        businesses = selected_method()
         
         if businesses:
             return Response(businesses, status=200)
