@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import LoginForm from './components/LoginForm';
@@ -6,10 +6,27 @@ import RegisterForm from './components/RegisterForm';
 import Dashboard from './components/Dashboard';
 import Notification from './components/Notification';
 import ToastContainer from './components/ToastContainer';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import ManualInstallButton from './components/ManualInstallButton';
 
 const AppContent: React.FC = () => {
   const { user, loading, sessionExpired, clearSessionExpired } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // Register service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -27,6 +44,8 @@ const AppContent: React.FC = () => {
       <>
         <Dashboard />
         <ToastContainer />
+        <PWAInstallPrompt />
+        <ManualInstallButton />
       </>
     );
   }
@@ -57,6 +76,8 @@ const AppContent: React.FC = () => {
         </div>
       </div>
       <ToastContainer />
+      <PWAInstallPrompt />
+      <ManualInstallButton />
     </>
   );
 };

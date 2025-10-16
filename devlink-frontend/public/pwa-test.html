@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Test - DevLink</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>DevLink PWA Test</h1>
+    <p>This page tests if your PWA is properly configured for Android installation.</p>
+    
+    <div class="test-item">
+        <strong>Manifest File:</strong>
+        <span id="manifest-status" class="status info">Checking...</span>
+    </div>
+    
+    <div class="test-item">
+        <strong>Service Worker:</strong>
+        <span id="sw-status" class="status info">Checking...</span>
+    </div>
+    
+    <div class="test-item">
+        <strong>HTTPS:</strong>
+        <span id="https-status" class="status info">Checking...</span>
+    </div>
+    
+    <div class="test-item">
+        <strong>Icons:</strong>
+        <span id="icons-status" class="status info">Checking...</span>
+    </div>
+    
+    <div class="test-item">
+        <strong>Install Prompt:</strong>
+        <span id="install-status" class="status info">Checking...</span>
+    </div>
+    
+    <div class="test-item">
+        <h3>Installation Instructions:</h3>
+        <p><strong>Android Chrome:</strong></p>
+        <ul>
+            <li>Tap the menu (⋮) in the address bar</li>
+            <li>Select "Add to Home Screen" or "Install App"</li>
+            <li>Confirm the installation</li>
+        </ul>
+        
+        <p><strong>Android Firefox:</strong></p>
+        <ul>
+            <li>Tap the menu (⋮) in the address bar</li>
+            <li>Select "Add to Home Screen"</li>
+            <li>Confirm the installation</li>
+        </ul>
+    </div>
+
+    <script>
+        // Test manifest
+        fetch('/manifest.json')
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('manifest-status').textContent = 'PASS';
+                    document.getElementById('manifest-status').className = 'status pass';
+                } else {
+                    document.getElementById('manifest-status').textContent = 'FAIL';
+                    document.getElementById('manifest-status').className = 'status fail';
+                }
+            })
+            .catch(() => {
+                document.getElementById('manifest-status').textContent = 'FAIL';
+                document.getElementById('manifest-status').className = 'status fail';
+            });
+
+        // Test service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(() => {
+                    document.getElementById('sw-status').textContent = 'PASS';
+                    document.getElementById('sw-status').className = 'status pass';
+                })
+                .catch(() => {
+                    document.getElementById('sw-status').textContent = 'FAIL';
+                    document.getElementById('sw-status').className = 'status fail';
+                });
+        } else {
+            document.getElementById('sw-status').textContent = 'FAIL';
+            document.getElementById('sw-status').className = 'status fail';
+        }
+
+        // Test HTTPS
+        if (location.protocol === 'https:' || location.hostname === 'localhost') {
+            document.getElementById('https-status').textContent = 'PASS';
+            document.getElementById('https-status').className = 'status pass';
+        } else {
+            document.getElementById('https-status').textContent = 'FAIL';
+            document.getElementById('https-status').className = 'status fail';
+        }
+
+        // Test icons
+        const icon192 = new Image();
+        icon192.onload = () => {
+            const icon512 = new Image();
+            icon512.onload = () => {
+                document.getElementById('icons-status').textContent = 'PASS';
+                document.getElementById('icons-status').className = 'status pass';
+            };
+            icon512.onerror = () => {
+                document.getElementById('icons-status').textContent = 'FAIL';
+                document.getElementById('icons-status').className = 'status fail';
+            };
+            icon512.src = '/logo512.png';
+        };
+        icon192.onerror = () => {
+            document.getElementById('icons-status').textContent = 'FAIL';
+            document.getElementById('icons-status').className = 'status fail';
+        };
+        icon192.src = '/logo192.png';
+
+        // Test install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            document.getElementById('install-status').textContent = 'PASS';
+            document.getElementById('install-status').className = 'status pass';
+        });
+
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            document.getElementById('install-status').textContent = 'ALREADY INSTALLED';
+            document.getElementById('install-status').className = 'status info';
+        }
+    </script>
+</body>
+</html>
