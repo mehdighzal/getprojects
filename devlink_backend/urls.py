@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from django.conf.urls.static import static
 import urllib.parse
 import os
 import requests
@@ -88,3 +89,7 @@ urlpatterns = [
     path('oauth/gmail/start/', lambda r: HttpResponseRedirect(_gmail_auth_url()), name='gmail_oauth_start'),
     path('oauth/gmail/callback/', _gmail_oauth_callback, name='gmail_oauth_callback'),
 ]
+
+# Serve media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

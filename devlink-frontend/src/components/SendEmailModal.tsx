@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { emailAPI, aiAPI } from '../services/api';
 import { useToast } from '../hooks/useToast';
+import { useProfile } from '../hooks/useProfile';
 
 interface Props {
   isOpen: boolean;
@@ -23,6 +24,7 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const { showSuccess, showError } = useToast();
+  const { getDeveloperName, getBio, getCompany, getJobTitle } = useProfile();
 
   // Update recipients when modal opens with new business
   useEffect(() => {
@@ -38,6 +40,24 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
       setSelectedTemplate('');
     }
   }, [isOpen, defaultRecipient]);
+
+  // Populate developer name from profile when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const profileName = getDeveloperName();
+      if (profileName && !developerName) {
+        setDeveloperName(profileName);
+      }
+      
+      // Set default services based on profile
+      const jobTitle = getJobTitle();
+      const company = getCompany();
+      if (jobTitle || company) {
+        const services = jobTitle ? `${jobTitle} services` : 'Professional services';
+        setDeveloperServices(services);
+      }
+    }
+  }, [isOpen, getDeveloperName, getJobTitle, getCompany, developerName]);
 
   // Load templates when modal opens
   useEffect(() => {

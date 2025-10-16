@@ -86,7 +86,7 @@ def login(request):
 @permission_classes([permissions.IsAuthenticated])
 def me(request):
     """Get current user information."""
-    return Response(UserSerializer(request.user).data)
+    return Response(UserSerializer(request.user, context={'request': request}).data)
 
 
 class UserProfileView(APIView):
@@ -95,15 +95,25 @@ class UserProfileView(APIView):
     
     def get(self, request):
         """Get current user profile."""
-        serializer = UserSerializer(request.user)
+        serializer = UserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
     
     def put(self, request):
         """Update current user profile."""
-        serializer = UserUpdateSerializer(request.user, data=request.data, context={'request': request})
+        # Handle both JSON and form data (for file uploads)
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle form data with files
+            data = request.data.copy()
+        else:
+            # Handle JSON data
+            data = request.data
+        
+        serializer = UserUpdateSerializer(request.user, data=data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            # Return updated user data
+            updated_serializer = UserSerializer(request.user, context={'request': request})
+            return Response(updated_serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

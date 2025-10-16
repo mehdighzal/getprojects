@@ -82,7 +82,17 @@ export const authAPI = {
   
   getProfile: () => api.get('/auth/profile/'),
   
-  updateProfile: (data: any) => api.put('/auth/profile/', data),
+  updateProfile: (data: any) => {
+    // Check if data is FormData (for file uploads)
+    if (data instanceof FormData) {
+      return api.put('/auth/profile/', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
+    return api.put('/auth/profile/', data);
+  },
   
   changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) =>
     api.post('/auth/change-password/', { 
