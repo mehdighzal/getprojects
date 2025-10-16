@@ -1,14 +1,22 @@
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db.models import Count, Sum, Q
+from django.utils import timezone
+from datetime import datetime, timedelta
 import os
 import base64
 import smtplib
+import threading
 from email.mime.text import MIMEText
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import SendEmailSerializer, EmailLogSerializer
-from .models import EmailLog
+from rest_framework import generics
+from .serializers import (
+    SendEmailSerializer, EmailLogSerializer, EmailTemplateSerializer,
+    BulkEmailCampaignSerializer, EmailAnalyticsSerializer
+)
+from .models import EmailLog, EmailTemplate, BulkEmailCampaign, EmailAnalytics
 
 
 class SendEmailView(APIView):
@@ -92,4 +100,249 @@ class EmailHistoryView(APIView):
             'page_size': page_size,
             'total': total,
         })
+
+
+# Email Templates Views
+class EmailTemplateListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = EmailTemplateSerializer
+
+    def get_queryset(self):
+        return EmailTemplate.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class EmailTemplateDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = EmailTemplateSerializer
+
+    def get_queryset(self):
+        return EmailTemplate.objects.filter(user=self.request.user)
+
+
+# Bulk Email Campaign Views
+class BulkEmailCampaignListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BulkEmailCampaignSerializer
+
+    def get_queryset(self):
+        return BulkEmailCampaign.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class BulkEmailCampaignDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BulkEmailCampaignSerializer
+
+    def get_queryset(self):
+        return BulkEmailCampaign.objects.filter(user=self.request.user)
+
+
+class BulkEmailCampaignSendView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            campaign = BulkEmailCampaign.objects.get(pk=pk, user=request.user)
+        except BulkEmailCampaign.DoesNotExist:
+            return Response({'detail': 'Campaign not found'}, status=404)
+
+        if campaign.status != 'draft':
+            return Response({'detail': 'Campaign is not in draft status'}, status=400)
+
+        # Start sending in background thread
+        campaign.status = 'sending'
+        campaign.started_at = timezone.now()
+        campaign.total_count = len(campaign.recipients)
+        campaign.save()
+
+        # Start background thread for sending
+        thread = threading.Thread(target=self._send_bulk_emails, args=(campaign,))
+        thread.daemon = True
+        thread.start()
+
+        return Response({'detail': 'Bulk email sending started with AI generation'}, status=200)
+
+    def _send_bulk_emails(self, campaign):
+        """Background task to send bulk emails with AI generation"""
+        try:
+            from ai_services.email_generator import EmailGenerator
+            
+            for i, recipient_data in enumerate(campaign.recipients):
+                try:
+                    # Generate AI email for this specific business
+                    business_name = recipient_data.get('name', 'Business')
+                    business_category = recipient_data.get('category', 'business')
+                    
+                    # Use AI to generate personalized email
+                    ai_email = EmailGenerator.generate_intro_email(
+                        business_name=business_name,
+                        business_category=business_category,
+                        developer_name=campaign.user.username or 'Developer',
+                        developer_services='Web development and digital solutions'
+                    )
+                    
+                    # Use AI-generated subject and body, or fallback to campaign defaults
+                    email_subject = ai_email.get('subject', campaign.subject)
+                    email_body = ai_email.get('body', campaign.body)
+                    
+                    # Send individual email
+                    send_mail(
+                        email_subject,
+                        email_body,
+                        settings.EMAIL_HOST_USER or None,
+                        [recipient_data.get('email', '')],
+                        fail_silently=False
+                    )
+                    
+                    # Log the email with AI generation info
+                    EmailLog.objects.create(
+                        user=campaign.user,
+                        subject=email_subject,
+                        body=email_body,
+                        recipients=recipient_data.get('email', ''),
+                        status='sent'
+                    )
+                    
+                    campaign.sent_count += 1
+                    campaign.save()
+                    
+                except Exception as e:
+                    # Log failed email
+                    EmailLog.objects.create(
+                        user=campaign.user,
+                        subject=campaign.subject,
+                        body=campaign.body,
+                        recipients=recipient_data.get('email', ''),
+                        status='failed',
+                        error_message=str(e)
+                    )
+
+            # Mark campaign as completed
+            campaign.status = 'completed'
+            campaign.completed_at = timezone.now()
+            campaign.save()
+
+        except Exception as e:
+            campaign.status = 'failed'
+            campaign.error_message = str(e)
+            campaign.save()
+
+
+class CreateBulkCampaignFromBusinessesView(APIView):
+    """Create a bulk campaign from business search results"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        businesses = request.data.get('businesses', [])
+        campaign_name = request.data.get('name', f'Bulk Campaign {timezone.now().strftime("%Y-%m-%d %H:%M")}')
+        
+        if not businesses:
+            return Response({'detail': 'No businesses provided'}, status=400)
+
+        # Create campaign with businesses as recipients
+        campaign = BulkEmailCampaign.objects.create(
+            user=request.user,
+            name=campaign_name,
+            subject='AI-Generated Personalized Email',  # Will be overridden by AI
+            body='This email will be personalized by AI for each business.',  # Will be overridden by AI
+            recipients=businesses,
+            status='draft'
+        )
+
+        return Response({
+            'detail': 'Bulk campaign created successfully',
+            'campaign_id': campaign.id,
+            'recipients_count': len(businesses)
+        }, status=201)
+
+
+# Analytics Views
+class EmailAnalyticsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Get date range from query params
+        days = int(request.query_params.get('days', 30))
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=days)
+
+        # Get analytics data
+        analytics_data = EmailAnalytics.objects.filter(
+            user=request.user,
+            date__range=[start_date, end_date]
+        ).order_by('date')
+
+        # Get summary stats
+        total_emails = EmailLog.objects.filter(
+            user=request.user,
+            created_at__date__range=[start_date, end_date]
+        ).count()
+
+        total_campaigns = BulkEmailCampaign.objects.filter(
+            user=request.user,
+            created_at__date__range=[start_date, end_date]
+        ).count()
+
+        # Get top templates
+        top_templates = EmailTemplate.objects.filter(
+            user=request.user
+        ).annotate(
+            usage_count=Count('bulkemailcampaign')
+        ).order_by('-usage_count')[:5]
+
+        # Get email status breakdown
+        status_breakdown = EmailLog.objects.filter(
+            user=request.user,
+            created_at__date__range=[start_date, end_date]
+        ).values('status').annotate(count=Count('status'))
+
+        return Response({
+            'date_range': {
+                'start_date': start_date,
+                'end_date': end_date,
+                'days': days
+            },
+            'summary': {
+                'total_emails': total_emails,
+                'total_campaigns': total_campaigns,
+                'templates_count': EmailTemplate.objects.filter(user=request.user).count()
+            },
+            'analytics': EmailAnalyticsSerializer(analytics_data, many=True).data,
+            'top_templates': [
+                {'name': template.name, 'usage_count': template.usage_count}
+                for template in top_templates
+            ],
+            'status_breakdown': list(status_breakdown)
+        })
+
+
+class EmailAnalyticsUpdateView(APIView):
+    """Update analytics when emails are sent"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        today = timezone.now().date()
+        
+        # Get or create today's analytics
+        analytics, created = EmailAnalytics.objects.get_or_create(
+            user=request.user,
+            date=today,
+            defaults={
+                'emails_sent': 0,
+                'unique_recipients': 0,
+                'templates_used': 0,
+                'campaigns_completed': 0
+            }
+        )
+
+        # Update counts
+        analytics.emails_sent += 1
+        analytics.save()
+
+        return Response({'detail': 'Analytics updated'}, status=200)
 

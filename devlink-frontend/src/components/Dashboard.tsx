@@ -3,13 +3,16 @@ import { useAuth } from '../contexts/AuthContext';
 import BusinessSearch from './BusinessSearch';
 import UserProfile from './UserProfile';
 import UserStats from './UserStats';
+import EmailTemplates from './EmailTemplates';
+import BulkEmailCampaigns from './BulkEmailCampaigns';
+import EmailAnalytics from './EmailAnalytics';
 import { emailAPI } from '../services/api';
 import LoadingSpinner from './LoadingSpinner';
 import EmptyState from './EmptyState';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
-  const [tab, setTab] = useState<'search' | 'history' | 'profile' | 'stats'>('search');
+  const [tab, setTab] = useState<'search' | 'history' | 'profile' | 'stats' | 'templates' | 'campaigns' | 'analytics'>('search');
   const [history, setHistory] = useState<any[]>();
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -59,38 +62,62 @@ const Dashboard: React.FC = () => {
       {/* Main Content */}
       <main className="py-8">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="mb-6 flex space-x-3 overflow-x-auto">
-            <button
-              onClick={() => setTab('search')}
-              className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='search' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
-            >
-              🔍 Search
-            </button>
-            <button
-              onClick={() => setTab('history')}
-              className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='history' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
-            >
-              📧 History
-            </button>
-            <button
-              onClick={() => setTab('stats')}
-              className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='stats' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
-            >
-              📊 Stats
-            </button>
-            <button
-              onClick={() => setTab('profile')}
-              className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='profile' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
-            >
-              👤 Profile
-            </button>
-          </div>
+                 <div className="mb-6 flex space-x-3 overflow-x-auto">
+                   <button
+                     onClick={() => setTab('search')}
+                     className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='search' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                   >
+                     🔍 Search
+                   </button>
+                   <button
+                     onClick={() => setTab('history')}
+                     className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='history' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                   >
+                     📧 History
+                   </button>
+                   <button
+                     onClick={() => setTab('templates')}
+                     className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='templates' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                   >
+                     📝 Templates
+                   </button>
+                   <button
+                     onClick={() => setTab('campaigns')}
+                     className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='campaigns' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                   >
+                     📢 Campaigns
+                   </button>
+                   <button
+                     onClick={() => setTab('analytics')}
+                     className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='analytics' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                   >
+                     📊 Analytics
+                   </button>
+                   <button
+                     onClick={() => setTab('stats')}
+                     className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='stats' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                   >
+                     📈 Stats
+                   </button>
+                   <button
+                     onClick={() => setTab('profile')}
+                     className={`px-4 py-2 rounded-md whitespace-nowrap ${tab==='profile' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
+                   >
+                     👤 Profile
+                   </button>
+                 </div>
 
-          {tab === 'search' && <BusinessSearch />}
-          
-          {tab === 'stats' && <UserStats />}
-          
-          {tab === 'profile' && <UserProfile />}
+                 {tab === 'search' && <BusinessSearch />}
+                 
+                 {tab === 'templates' && <EmailTemplates />}
+                 
+                 {tab === 'campaigns' && <BulkEmailCampaigns />}
+                 
+                 {tab === 'analytics' && <EmailAnalytics />}
+                 
+                 {tab === 'stats' && <UserStats />}
+                 
+                 {tab === 'profile' && <UserProfile />}
 
           {tab === 'history' && (
             <div className="bg-white rounded-lg shadow">

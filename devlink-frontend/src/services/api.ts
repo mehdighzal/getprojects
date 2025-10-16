@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000') + '/api';
+const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || 'http://10.0.6.151:8000') + '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -107,6 +107,25 @@ export const emailAPI = {
     api.post('/email/send/', emailData),
   history: (page: number, page_size = 10) =>
     api.get('/email/history/', { params: { page, page_size } }),
+  
+  // Email Templates
+  getTemplates: () => api.get('/email/templates/'),
+  createTemplate: (data: any) => api.post('/email/templates/', data),
+  updateTemplate: (id: number, data: any) => api.put(`/email/templates/${id}/`, data),
+  deleteTemplate: (id: number) => api.delete(`/email/templates/${id}/`),
+  
+  // Bulk Campaigns
+  getCampaigns: () => api.get('/email/campaigns/'),
+  createCampaign: (data: any) => api.post('/email/campaigns/', data),
+  updateCampaign: (id: number, data: any) => api.put(`/email/campaigns/${id}/`, data),
+  deleteCampaign: (id: number) => api.delete(`/email/campaigns/${id}/`),
+  sendCampaign: (id: number) => api.post(`/email/campaigns/${id}/send/`),
+  createCampaignFromBusinesses: (businesses: any[], name?: string) => 
+    api.post('/email/campaigns/create-from-businesses/', { businesses, name }),
+  
+  // Analytics
+  getAnalytics: (days: number = 30) => api.get(`/email/analytics/?days=${days}`),
+  updateAnalytics: () => api.post('/email/analytics/update/'),
 };
 
 export const aiAPI = {

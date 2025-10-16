@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Business, aiAPI } from '../services/api';
+import { Business, aiAPI, emailAPI } from '../services/api';
 import SendEmailModal from './SendEmailModal';
 import BusinessCardSkeleton from './BusinessCardSkeleton';
 import EmptyState from './EmptyState';
@@ -12,6 +12,8 @@ const BusinessSearch: React.FC = () => {
   const [error, setError] = useState('');
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState<string | undefined>(undefined);
+  const [selectedBusinesses, setSelectedBusinesses] = useState<Set<number>>(new Set());
+  const [bulkCampaignLoading, setBulkCampaignLoading] = useState(false);
   const { showSuccess, showError } = useToast();
   const [filters, setFilters] = useState({
     country: '',
@@ -76,6 +78,47 @@ const BusinessSearch: React.FC = () => {
   useEffect(() => {
     searchBusinesses();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleBusinessSelect = (businessId: number) => {
+    const newSelected = new Set(selectedBusinesses);
+    if (newSelected.has(businessId)) {
+      newSelected.delete(businessId);
+    } else {
+      newSelected.add(businessId);
+    }
+    setSelectedBusinesses(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedBusinesses.size === businesses.length) {
+      setSelectedBusinesses(new Set());
+    } else {
+      setSelectedBusinesses(new Set(businesses.map(b => b.id)));
+    }
+  };
+
+  const createBulkCampaign = async () => {
+    if (selectedBusinesses.size === 0) {
+      showError('Please select at least one business');
+      return;
+    }
+
+    setBulkCampaignLoading(true);
+    try {
+      const selectedBusinessData = businesses.filter(b => selectedBusinesses.has(b.id));
+      const campaignName = prompt('Enter campaign name:', `AI Bulk Campaign - ${new Date().toLocaleDateString()}`);
+      
+      if (!campaignName) return;
+
+      await emailAPI.createCampaignFromBusinesses(selectedBusinessData, campaignName);
+      showSuccess(`Bulk campaign created with ${selectedBusinesses.size} businesses! Check the Campaigns tab to send.`);
+      setSelectedBusinesses(new Set());
+    } catch (error: any) {
+      showError(error.response?.data?.detail || 'Failed to create bulk campaign');
+    } finally {
+      setBulkCampaignLoading(false);
+    }
+  };
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -148,20 +191,46 @@ const BusinessSearch: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={searchBusinesses}
-          disabled={loading}
-          className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center justify-center space-x-2"
-        >
-          {loading ? (
-            <>
-              <LoadingSpinner size="sm" />
-              <span>Searching...</span>
-            </>
-          ) : (
-            <span>Search Businesses</span>
-          )}
-        </button>
+             <div className="mt-4 flex space-x-3">
+               <button
+                 onClick={searchBusinesses}
+                 disabled={loading}
+                 className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center justify-center space-x-2"
+               >
+                 {loading ? (
+                   <>
+                     <LoadingSpinner size="sm" />
+                     <span>Searching...</span>
+                   </>
+                 ) : (
+                   <span>Search Businesses</span>
+                 )}
+               </button>
+               
+               {businesses.length > 0 && (
+                 <button
+                   onClick={createBulkCampaign}
+                   disabled={bulkCampaignLoading || selectedBusinesses.size === 0}
+                   className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 flex items-center space-x-2"
+                 >
+                   {bulkCampaignLoading ? (
+                     <>
+                       <LoadingSpinner size="sm" />
+                       <span>Creating...</span>
+                     </>
+                   ) : (
+                     <>
+                       <span>🤖 AI Bulk Campaign</span>
+                       {selectedBusinesses.size > 0 && (
+                         <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                           {selectedBusinesses.size}
+                         </span>
+                       )}
+                     </>
+                   )}
+                 </button>
+               )}
+             </div>
       </div>
 
       {/* Info Banner */}
@@ -219,14 +288,55 @@ const BusinessSearch: React.FC = () => {
         />
       )}
 
+      {/* Selection Controls */}
+      {!loading && businesses.length > 0 && (
+        <div className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+          <div className="flex items-center space-x-3">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedBusinesses.size === businesses.length && businesses.length > 0}
+                onChange={handleSelectAll}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Select All ({selectedBusinesses.size}/{businesses.length})
+              </span>
+            </label>
+          </div>
+          {selectedBusinesses.size > 0 && (
+            <div className="text-sm text-gray-600">
+              {selectedBusinesses.size} business{selectedBusinesses.size !== 1 ? 'es' : ''} selected
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Results */}
       {!loading && businesses.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {businesses.map((business) => (
-          <div key={business.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              {business.name}
-            </h3>
+          <div 
+            key={business.id} 
+            className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-2 ${
+              selectedBusinesses.has(business.id) ? 'border-blue-500 bg-blue-50' : 'border-transparent'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  {business.name}
+                </h3>
+              </div>
+              <label className="flex items-center cursor-pointer ml-2">
+                <input
+                  type="checkbox"
+                  checked={selectedBusinesses.has(business.id)}
+                  onChange={() => handleBusinessSelect(business.id)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </label>
+            </div>
             
             <div className="space-y-2 text-sm text-gray-600">
               <p><span className="font-medium">Category:</span> {business.category}</p>

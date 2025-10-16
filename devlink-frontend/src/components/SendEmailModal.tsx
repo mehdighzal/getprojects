@@ -20,6 +20,8 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
   const [developerName, setDeveloperName] = useState('');
   const [developerServices, setDeveloperServices] = useState('Web development and digital solutions');
   const [generating, setGenerating] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
   const { showSuccess, showError } = useToast();
 
   // Update recipients when modal opens with new business
@@ -33,8 +35,25 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
       setBody('');
       setError('');
       setSuccess('');
+      setSelectedTemplate('');
     }
   }, [isOpen, defaultRecipient]);
+
+  // Load templates when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadTemplates();
+    }
+  }, [isOpen]);
+
+  const loadTemplates = async () => {
+    try {
+      const response = await emailAPI.getTemplates();
+      setTemplates(response.data);
+    } catch (error) {
+      // Silently fail - templates are optional
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -85,6 +104,16 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
       showError(errorMessage);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const onUseTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id.toString() === templateId);
+    if (template) {
+      setSubject(template.subject);
+      setBody(template.body);
+      setSelectedTemplate(templateId);
+      showSuccess(`Template "${template.name}" applied!`);
     }
   };
 
@@ -144,6 +173,24 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          {templates.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Use Template</label>
+              <select
+                value={selectedTemplate}
+                onChange={(e) => onUseTemplate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a template...</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} ({template.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
             <input
