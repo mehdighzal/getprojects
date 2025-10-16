@@ -28,7 +28,8 @@ class GenerateEmailView(APIView):
             business_name=business_name,
             business_category=business_category,
             developer_name=developer_name,
-            developer_services=developer_services
+            developer_services=developer_services,
+            user=request.user
         )
         
         return Response(email_content, status=status.HTTP_200_OK)
@@ -51,7 +52,8 @@ class GenerateBulkEmailView(APIView):
         email_content = EmailGenerator.generate_bulk_email_template(
             category=category,
             developer_name=developer_name,
-            developer_services=developer_services
+            developer_services=developer_services,
+            user=request.user
         )
         
         return Response(email_content, status=status.HTTP_200_OK)

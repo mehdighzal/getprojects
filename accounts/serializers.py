@@ -61,19 +61,29 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         """Update user and profile data."""
+        print(f"DEBUG: Updating user {instance.username}")
+        print(f"DEBUG: Validated data: {validated_data}")
+        
         profile_data = validated_data.pop('profile', None)
+        print(f"DEBUG: Profile data: {profile_data}")
         
         # Update user fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        print(f"DEBUG: User fields updated")
         
         # Update or create profile
         if profile_data:
             profile, created = UserProfile.objects.get_or_create(user=instance)
+            print(f"DEBUG: Profile {'created' if created else 'found'}")
             for attr, value in profile_data.items():
+                print(f"DEBUG: Setting profile.{attr} = {value}")
                 setattr(profile, attr, value)
             profile.save()
+            print(f"DEBUG: Profile saved")
+        else:
+            print("DEBUG: No profile data to update")
         
         return instance
 
