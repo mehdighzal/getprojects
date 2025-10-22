@@ -158,13 +158,15 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,192.168.56.1,0.0.0.0,172.30.112.1,10.0.6.141,10.0.6.151').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,172.19.32.147').split(',')
 
 # CORS configuration for local frontend dev server
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3001,http://127.0.0.1:3001,http://192.168.56.1:3001,http://0.0.0.0:3001,http://172.30.112.1:3001,http://10.0.6.141:3001,http://10.0.6.151:3001'
+    'http://localhost:3001,http://127.0.0.1:3001,http://172.19.32.147:3001'
 ).split(',')
 
 # If using cookies/auth across origins, also allow credentials
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_ALL_ORIGINS = True

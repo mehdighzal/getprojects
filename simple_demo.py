@@ -8,7 +8,7 @@ import json
 import time
 
 API_BASE = "http://127.0.0.1:8000/api"
-FRONTEND_URL = "http://localhost:3000"
+FRONTEND_URL = "http://localhost:3001"
 
 def print_header(title):
     print("\n" + "=" * 60)

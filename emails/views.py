@@ -17,6 +17,7 @@ from .serializers import (
     BulkEmailCampaignSerializer, EmailAnalyticsSerializer
 )
 from .models import EmailLog, EmailTemplate, BulkEmailCampaign, EmailAnalytics
+from .gmail_oauth2 import GmailOAuth2Service
 
 
 class SendEmailView(APIView):
@@ -29,6 +30,43 @@ class SendEmailView(APIView):
         body = serializer.validated_data['body']
         recipients = serializer.validated_data['recipients']
 
+        # Check if user has Gmail OAuth2 connected
+        try:
+            profile = request.user.profile
+            if profile.gmail_connected and profile.is_gmail_token_valid():
+                # Use Gmail OAuth2
+                oauth_service = GmailOAuth2Service()
+                try:
+                    result = oauth_service.send_email(
+                        user=request.user,
+                        subject=subject,
+                        body=body,
+                        recipients=recipients
+                    )
+                    
+                    EmailLog.objects.create(
+                        user=request.user,
+                        subject=subject,
+                        body=body,
+                        recipients=','.join(recipients),
+                        status='sent'
+                    )
+                    
+                    return Response({
+                        'sent': len(recipients), 
+                        'method': 'gmail_oauth2',
+                        'gmail_message_id': result.get('id')
+                    }, status=status.HTTP_200_OK)
+                    
+                except Exception as e:
+                    # Fall back to basic method if Gmail fails
+                    pass
+        
+        except Exception:
+            # Profile doesn't exist or Gmail not connected, use basic method
+            pass
+
+        # Use basic email method (fallback)
         auth_method = os.getenv('EMAIL_AUTH_METHOD', 'basic')  # basic | gmail_oauth2 | outlook_oauth2
 
         if auth_method == 'basic':
@@ -70,9 +108,10 @@ class SendEmailView(APIView):
             subject=subject,
             body=body,
             recipients=','.join(recipients),
+            status='sent'
         )
 
-        return Response({'sent': len(recipients)}, status=status.HTTP_200_OK)
+        return Response({'sent': len(recipients), 'method': 'basic'}, status=status.HTTP_200_OK)
 
 
 
@@ -177,27 +216,54 @@ class BulkEmailCampaignSendView(APIView):
                     # Generate AI email for this specific business
                     business_name = recipient_data.get('name', 'Business')
                     business_category = recipient_data.get('category', 'business')
+                    business_country = recipient_data.get('country', None)
+                    business_city = recipient_data.get('city', None)
                     
-                    # Use AI to generate personalized email
+                    # Use AI to generate personalized email with localization
                     ai_email = EmailGenerator.generate_intro_email(
                         business_name=business_name,
                         business_category=business_category,
                         developer_name=campaign.user.username or 'Developer',
-                        developer_services='Web development and digital solutions'
+                        developer_services='Web development and digital solutions',
+                        user=campaign.user,  # Pass the user object for real name and info
+                        business_country=business_country,  # Pass country for language localization
+                        business_city=business_city  # Pass city for more specific localization
                     )
                     
                     # Use AI-generated subject and body, or fallback to campaign defaults
                     email_subject = ai_email.get('subject', campaign.subject)
                     email_body = ai_email.get('body', campaign.body)
                     
-                    # Send individual email
-                    send_mail(
-                        email_subject,
-                        email_body,
-                        settings.EMAIL_HOST_USER or None,
-                        [recipient_data.get('email', '')],
-                        fail_silently=False
-                    )
+                    # Send individual email - try Gmail OAuth2 first
+                    try:
+                        profile = campaign.user.profile
+                        if profile.gmail_connected and profile.is_gmail_token_valid():
+                            # Use Gmail OAuth2
+                            oauth_service = GmailOAuth2Service()
+                            oauth_service.send_email(
+                                user=campaign.user,
+                                subject=email_subject,
+                                body=email_body,
+                                recipients=[recipient_data.get('email', '')]
+                            )
+                        else:
+                            # Fall back to basic method
+                            send_mail(
+                                email_subject,
+                                email_body,
+                                settings.EMAIL_HOST_USER or None,
+                                [recipient_data.get('email', '')],
+                                fail_silently=False
+                            )
+                    except Exception as e:
+                        # Fall back to basic method if Gmail fails
+                        send_mail(
+                            email_subject,
+                            email_body,
+                            settings.EMAIL_HOST_USER or None,
+                            [recipient_data.get('email', '')],
+                            fail_silently=False
+                        )
                     
                     # Log the email with AI generation info
                     EmailLog.objects.create(

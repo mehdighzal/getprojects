@@ -37,6 +37,8 @@ describe('SendEmailModal Component', () => {
     defaultRecipient: 'test@business.com',
     businessName: 'Test Business',
     businessCategory: 'restaurant',
+    businessCountry: 'Italy',
+    businessCity: 'Rome',
   };
 
   beforeEach(() => {

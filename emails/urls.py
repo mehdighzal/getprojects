@@ -5,6 +5,10 @@ from .views import (
     BulkEmailCampaignDetailView, BulkEmailCampaignSendView,
     CreateBulkCampaignFromBusinessesView, EmailAnalyticsView, EmailAnalyticsUpdateView
 )
+from .oauth2_views import (
+    gmail_auth_url, gmail_callback, gmail_status, 
+    gmail_disconnect, send_gmail_email
+)
 
 
 urlpatterns = [
@@ -25,6 +29,13 @@ urlpatterns = [
     # Analytics
     path('analytics/', EmailAnalyticsView.as_view(), name='email_analytics'),
     path('analytics/update/', EmailAnalyticsUpdateView.as_view(), name='analytics_update'),
+    
+    # Gmail OAuth2
+    path('gmail/auth-url/', gmail_auth_url, name='gmail_auth_url'),
+    path('gmail/callback/', gmail_callback, name='gmail_callback'),
+    path('gmail/status/', gmail_status, name='gmail_status'),
+    path('gmail/disconnect/', gmail_disconnect, name='gmail_disconnect'),
+    path('gmail/send/', send_gmail_email, name='send_gmail_email'),
 ]
 
 

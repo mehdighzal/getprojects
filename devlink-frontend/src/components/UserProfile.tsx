@@ -4,6 +4,7 @@ import { authAPI } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { useProfile, UserProfileData } from '../hooks/useProfile';
 import LoadingSpinner from './LoadingSpinner';
+import GmailIntegration from './GmailIntegration';
 
 const UserProfile: React.FC = () => {
   const { user, logout } = useAuth();
@@ -420,6 +421,9 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Gmail Integration */}
+      <GmailIntegration />
 
       {/* Security Settings */}
       <div className="bg-white rounded-lg shadow p-6">

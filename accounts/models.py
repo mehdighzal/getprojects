@@ -28,6 +28,13 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # OAuth2 Gmail Integration
+    gmail_access_token = models.TextField(blank=True, null=True)
+    gmail_refresh_token = models.TextField(blank=True, null=True)
+    gmail_token_expires_at = models.DateTimeField(blank=True, null=True)
+    gmail_email = models.EmailField(blank=True, null=True)
+    gmail_connected = models.BooleanField(default=False)
+    
     class Meta:
         verbose_name = "User Profile"
         verbose_name_plural = "User Profiles"
@@ -41,3 +48,10 @@ class UserProfile(models.Model):
         if self.user.first_name and self.user.last_name:
             return f"{self.user.first_name} {self.user.last_name}"
         return self.user.username
+    
+    def is_gmail_token_valid(self):
+        """Check if Gmail OAuth2 token is still valid."""
+        if not self.gmail_access_token or not self.gmail_token_expires_at:
+            return False
+        from django.utils import timezone
+        return timezone.now() < self.gmail_token_expires_at

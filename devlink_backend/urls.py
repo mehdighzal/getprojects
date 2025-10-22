@@ -32,7 +32,7 @@ def api_root(request):
         'endpoints': {
             'auth': '/api/auth/',
             'businesses': '/api/businesses/',
-            'email': '/api/email/',
+            'emails': '/api/emails/',
             'ai': '/api/ai/',
             'admin': '/admin/'
         },
@@ -84,7 +84,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('accounts.urls')),
     path('api/businesses/', include('businesses.urls')),
-    path('api/email/', include('emails.urls')),
+    path('api/emails/', include('emails.urls')),
     path('api/ai/', include('ai_services.urls')),
     path('oauth/gmail/start/', lambda r: HttpResponseRedirect(_gmail_auth_url()), name='gmail_oauth_start'),
     path('oauth/gmail/callback/', _gmail_oauth_callback, name='gmail_oauth_callback'),

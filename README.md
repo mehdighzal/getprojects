@@ -23,7 +23,7 @@ Backend `.env` keys (create `./.env`):
 ```
 DJANGO_SECRET_KEY=change-me
 DEBUG=true
-ALLOWED_HOSTS=127.0.0.1,localhost,192.168.56.1
+ALLOWED_HOSTS=127.0.0.1,localhost,10.06.188
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
 EMAIL_HOST=
 EMAIL_PORT=587

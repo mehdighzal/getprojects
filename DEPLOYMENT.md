@@ -274,7 +274,7 @@ certbot --nginx -d yourdomain.com
 curl http://localhost:8000/
 
 # Frontend health
-curl http://localhost:3000/
+curl http://localhost:3001/
 
 # Database health
 psql -c "SELECT 1"

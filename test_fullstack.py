@@ -9,7 +9,7 @@ import json
 import time
 
 API_BASE = "http://127.0.0.1:8000/api"
-FRONTEND_URL = "http://localhost:3000"
+FRONTEND_URL = "http://localhost:3001"
 
 def test_backend_api():
     """Test backend API endpoints"""
@@ -117,7 +117,7 @@ def main():
         print("\nSome components need attention")
     
     print("\nNext steps:")
-    print("1. Visit http://localhost:3000 to use the frontend")
+    print("1. Visit http://localhost:3001 to use the frontend")
     print("2. Register a new user or login")
     print("3. Search for businesses")
     print("4. Generate and send AI emails")

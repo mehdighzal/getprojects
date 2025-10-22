@@ -20,6 +20,8 @@ class GenerateEmailView(APIView):
         # Extract parameters
         business_name = data.get('business_name', '')
         business_category = data.get('business_category', '')
+        business_country = data.get('business_country', '')
+        business_city = data.get('business_city', '')
         developer_name = data.get('developer_name', request.user.username)
         developer_services = data.get('developer_services', 'Web development and digital solutions')
         
@@ -29,7 +31,9 @@ class GenerateEmailView(APIView):
             business_category=business_category,
             developer_name=developer_name,
             developer_services=developer_services,
-            user=request.user
+            user=request.user,
+            business_country=business_country,
+            business_city=business_city
         )
         
         return Response(email_content, status=status.HTTP_200_OK)

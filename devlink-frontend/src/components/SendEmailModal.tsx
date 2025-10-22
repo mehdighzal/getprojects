@@ -8,10 +8,12 @@ interface Props {
   defaultRecipient?: string;
   businessName?: string;
   businessCategory?: string;
+  businessCountry?: string;
+  businessCity?: string;
   onClose: () => void;
 }
 
-const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessName, businessCategory, onClose }) => {
+const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessName, businessCategory, businessCountry, businessCity, onClose }) => {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [recipients, setRecipients] = useState<string>(defaultRecipient || '');
@@ -112,6 +114,8 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
       const resp = await aiAPI.generateEmail({
         business_name: businessName || '',
         business_category: businessCategory || '',
+        business_country: businessCountry || '',
+        business_city: businessCity || '',
         developer_name: developerName || 'Developer',
         developer_services: developerServices || 'Web development and digital solutions',
       });
@@ -173,6 +177,16 @@ const SendEmailModal: React.FC<Props> = ({ isOpen, defaultRecipient, businessNam
               />
             </div>
           </div>
+          
+          {/* Business Location Display */}
+          {(businessCountry || businessCity) && (
+            <div className="bg-gray-50 rounded-md p-3">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Location:</span> {businessCity && businessCountry ? `${businessCity}, ${businessCountry}` : businessCountry || businessCity}
+              </p>
+            </div>
+          )}
+          
           <div className="flex justify-end">
             <button
               type="button"

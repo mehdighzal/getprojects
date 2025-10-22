@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || 'http://10.0.6.151:8000') + '/api';
+const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || 'http://172.19.32.147:8000') + '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -67,6 +67,8 @@ export interface EmailRequest {
 export interface GenerateEmailRequest {
   business_name: string;
   business_category: string;
+  business_country?: string;
+  business_city?: string;
   developer_name: string;
   developer_services: string;
 }
@@ -114,28 +116,28 @@ export const businessAPI = {
 
 export const emailAPI = {
   sendEmail: (emailData: EmailRequest) =>
-    api.post('/email/send/', emailData),
+    api.post('/emails/send/', emailData),
   history: (page: number, page_size = 10) =>
-    api.get('/email/history/', { params: { page, page_size } }),
+    api.get('/emails/history/', { params: { page, page_size } }),
   
   // Email Templates
-  getTemplates: () => api.get('/email/templates/'),
-  createTemplate: (data: any) => api.post('/email/templates/', data),
-  updateTemplate: (id: number, data: any) => api.put(`/email/templates/${id}/`, data),
-  deleteTemplate: (id: number) => api.delete(`/email/templates/${id}/`),
+  getTemplates: () => api.get('/emails/templates/'),
+  createTemplate: (data: any) => api.post('/emails/templates/', data),
+  updateTemplate: (id: number, data: any) => api.put(`/emails/templates/${id}/`, data),
+  deleteTemplate: (id: number) => api.delete(`/emails/templates/${id}/`),
   
   // Bulk Campaigns
-  getCampaigns: () => api.get('/email/campaigns/'),
-  createCampaign: (data: any) => api.post('/email/campaigns/', data),
-  updateCampaign: (id: number, data: any) => api.put(`/email/campaigns/${id}/`, data),
-  deleteCampaign: (id: number) => api.delete(`/email/campaigns/${id}/`),
-  sendCampaign: (id: number) => api.post(`/email/campaigns/${id}/send/`),
+  getCampaigns: () => api.get('/emails/campaigns/'),
+  createCampaign: (data: any) => api.post('/emails/campaigns/', data),
+  updateCampaign: (id: number, data: any) => api.put(`/emails/campaigns/${id}/`, data),
+  deleteCampaign: (id: number) => api.delete(`/emails/campaigns/${id}/`),
+  sendCampaign: (id: number) => api.post(`/emails/campaigns/${id}/send/`),
   createCampaignFromBusinesses: (businesses: any[], name?: string) => 
-    api.post('/email/campaigns/create-from-businesses/', { businesses, name }),
+    api.post('/emails/campaigns/create-from-businesses/', { businesses, name }),
   
   // Analytics
-  getAnalytics: (days: number = 30) => api.get(`/email/analytics/?days=${days}`),
-  updateAnalytics: () => api.post('/email/analytics/update/'),
+  getAnalytics: (days: number = 30) => api.get(`/emails/analytics/?days=${days}`),
+  updateAnalytics: () => api.post('/emails/analytics/update/'),
 };
 
 export const aiAPI = {

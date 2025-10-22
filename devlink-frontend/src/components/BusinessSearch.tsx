@@ -421,6 +421,8 @@ const BusinessSearch: React.FC = () => {
         defaultRecipient={emailRecipient}
         businessName={businesses.find(b => b.email === emailRecipient)?.name}
         businessCategory={businesses.find(b => b.email === emailRecipient)?.category}
+        businessCountry={businesses.find(b => b.email === emailRecipient)?.country}
+        businessCity={businesses.find(b => b.email === emailRecipient)?.city}
         onClose={() => setEmailOpen(false)}
       />
     </div>
